@@ -1,0 +1,26 @@
+ul > li {
+    list-style: none;
+}
+
+.row {
+    margin-bottom: 10px;
+    border-bottom: 1px solid black;
+}
+.small-button {
+    padding: 0 0 0 0;
+}
+.item-list {
+    display: flex;
+    flex-direction: column;
+}
+.hide {
+    display: none !important;
+}
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.content {
+    margin-top:0px;
+}
