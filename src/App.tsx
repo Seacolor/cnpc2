@@ -220,7 +220,6 @@ function App() {
           console.error(err);
           return false
         });
-      console.log(ready);
       setReady(ready);
     })();
   }, []);
@@ -462,13 +461,11 @@ function App() {
         // user cancelled the selection
       } else {
         // user selected a single directory
-        console.log(path)
         const ready = await invoke<boolean>("set_elona_dir", {path})
           .catch(err => {
             console.error(err);
             return false
           });
-        console.log(ready);
         setReady(ready);
       }
     })();
@@ -566,13 +563,11 @@ function App() {
                   // user cancelled the selection
                 } else {
                   // user selected a single file
-                  console.log(path)
                   const character = await invoke<Types.TCharacter>("load_file", {path})
                     .catch(err => {
                       console.error(err);
                       return null
                     });
-                  console.log(character)
                   if (character) {
                     setCharacter({...character});
                   }
@@ -581,7 +576,6 @@ function App() {
             }}>Load</button>
             <button onClick={() => {
               (async () => {
-                console.log(character);
                 // Open a save dialog for text file
                 const path = await save({
                   filters: [{
@@ -593,7 +587,6 @@ function App() {
                   // user cancelled the selection
                 } else {
                   // user selected a single file
-                  console.log(path)
                   await invoke<Types.TCharacter>("save_file", { path: path, data: character })
                 }
               })();

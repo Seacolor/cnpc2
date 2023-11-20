@@ -1725,7 +1725,6 @@ async fn load_file(path: &str) -> Result<Character, String> {
 
 #[tauri::command]
 async fn save_file(path: &str, data: Character) -> Result<(), String> {
-    println!("path: {}", path);
     let mut text: Vec<String> = Vec::new();
     text.push("%Elona Custom Npc".into());
     text.push("".into());
