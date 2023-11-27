@@ -25,6 +25,7 @@ directories = "5.0.1"
 regex = "1.10.2"
 placeholder = "1.1.4"
 rust-ini = "0.20.0"
+dunce = "1.0.4"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

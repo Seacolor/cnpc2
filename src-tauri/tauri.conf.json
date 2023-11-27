@@ -19,6 +19,9 @@
       },
       "dialog": {
         "all": true
+      },
+      "fs": {
+        "scope": ["$RESOURCE/*"]
       }
     },
     "bundle": {
@@ -39,7 +42,10 @@
         "wix": {
           "language": "ja-JP"
         }
-      }
+      },
+      "resources": [
+        "resources/*"
+      ]
     },
     "security": {
       "csp": null

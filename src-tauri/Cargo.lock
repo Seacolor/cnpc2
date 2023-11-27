@@ -342,6 +342,7 @@ version = "0.0.0"
 dependencies = [
  "csv",
  "directories",
+ "dunce",
  "encoding_rs",
  "futures",
  "placeholder",
