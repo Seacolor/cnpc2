@@ -4,7 +4,7 @@
 use std::{fs::{self, File}, io::Write};
 use std::collections::HashMap;
 
-use encoding_rs;
+use encoding_rs::SHIFT_JIS;
 use placeholder::render;
 use ini::Ini;
 
@@ -1714,7 +1714,7 @@ async fn load_file(path: &str) -> Result<Character, String> {
     // 読み込み
     let s = fs::read(path).unwrap();
     // Shift_JISのバイト列(Vec<u8>) を UTF-8の文字列(String) に変換
-    let (res, _, _) = encoding_rs::SHIFT_JIS.decode(&s);
+    let (res, _, _) = SHIFT_JIS.decode(&s);
     let text = res.into_owned();
     let result = parser::parse(&text);
     if let Ok(_d) = result {
@@ -1957,7 +1957,7 @@ async fn save_file(path: &str, data: Character) -> Result<(), String> {
     txt.push("%endTxt".into());
     text.push(txt.join("\r\n"));
     let string = text.join("\r\n");
-    let (encoded, _, _) =  encoding_rs::SHIFT_JIS.encode(&string);
+    let (encoded, _, _) =  SHIFT_JIS.encode(&string);
     let mut f = File::create(path).unwrap();
     let _ = f.write_all(&encoded.into_owned());
     Ok(())
