@@ -16,7 +16,7 @@ const ValueEditor: FC<Props> = ({
       onValueChange && onValueChange(value);
     }
 
-    if (textId?.id == "%txtallykilled{}") {
+    if (textId?.id == "%txtallykilled{0}") {
       return (
           <>
             <input
@@ -26,7 +26,7 @@ const ValueEditor: FC<Props> = ({
           />
           </>
       );
-    } else if (textId?.id == "%txtcast{}") {
+    } else if (textId?.id == "%txtcast{0}") {
       return (
           <>
             <select onChange={(e) => {
@@ -40,7 +40,7 @@ const ValueEditor: FC<Props> = ({
             </select>
           </>
       );
-    } else if (textId?.id == "%txtpornobook{}") {
+    } else if (textId?.id == "%txtpornobook{0}") {
       return (
           <>
             <input
@@ -51,7 +51,7 @@ const ValueEditor: FC<Props> = ({
             />
           </>
       );
-    } else if (textId?.id == "%txtactbefore{}" || textId?.id == "%txtactafter{}") {
+    } else if (textId?.id == "%txtactbefore{0}" || textId?.id == "%txtactafter{0}") {
       return (
           <>
             <select onChange={(e) => {
