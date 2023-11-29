@@ -32,7 +32,7 @@ const ValueEditor: FC<Props> = ({
             <select onChange={(e) => {
                 onChange(e.target.value)
             }}>
-              { actions?.list.filter((e: Types.TAction) => e.id < 600).map((e: Types.TAction, i: number) => {
+              { actions?.list.filter((e: Types.TAction) => e.id >= 400 && e.id < 600).map((e: Types.TAction, i: number) => {
                 return (
                   <option key={i} value={e.id}>{e.name}</option>
                 );
