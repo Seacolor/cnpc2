@@ -439,12 +439,10 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
         if line == "%endTxt" {
             break;
         }
-        let result1 = regex1.find(trimmed_line);
-        if result1.is_some() {
+        if regex1.is_match(trimmed_line) {
             continue;
         }
-        let result2 = regex2.find(trimmed_line);
-        if result2.is_some() {
+        if regex2.is_match(trimmed_line) {
             is_parsing_section = false;
             continue;
         }
