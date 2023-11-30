@@ -345,6 +345,7 @@ dependencies = [
  "dunce",
  "encoding_rs",
  "futures",
+ "lazy_static",
  "placeholder",
  "regex",
  "rust-ini",

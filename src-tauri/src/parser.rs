@@ -1,4 +1,16 @@
 use regex::Regex;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref REGEX_TALK_ORDER: Regex = Regex::new(r"(?mR)^%txt_talk_order$").unwrap();
+    static ref REGEX_TALK: Regex = Regex::new("(?sR)%txt_ucnpc_ev_b\r\n(.*?)\r\n%txt_ucnpc_ev_e").unwrap();
+    static ref REGEX_CASE: Regex = Regex::new(r"(?m)^%?(\$.*?) (.*?)$").unwrap();
+    static ref REGEX_COMMENT: Regex = Regex::new(r"(?m)^//.*?").unwrap();
+    static ref REGEX_TAG_EN: Regex = Regex::new(r"(?im)^%.*?,en").unwrap();
+    static ref REGEX_TAG_JP: Regex = Regex::new(r"(?im)^(%.*?,jp)").unwrap();
+    static ref REGEX_EXPRESSION: Regex = Regex::new(r"(?m)^%?\$.*?$").unwrap();
+    static ref REGEX_IMPRESSION_NUMBER: Regex = Regex::new(r"(?m)^(\d+)$").unwrap();
+}
 
 use crate::{Character, UserResist, UserRace, UserSkill, UserTrait, Figure, UserClass, InitEquip, UserText, UserTextBody, UserTalk};
 struct Equip {
@@ -22,9 +34,8 @@ struct Talk {
 }
 
 fn parse_talk(text: &str) -> Option<Talk> {
-    let regex = Regex::new("(?sR)%txt_ucnpc_ev_b\r\n(.*?)\r\n%txt_ucnpc_ev_e").unwrap();
-    if let Some(mat) = regex.find(text) {
-        let parsed_text = regex.replace(text, "").to_string();
+    if let Some(mat) = REGEX_TALK.find(text) {
+        let parsed_text = REGEX_TALK.replace(text, "").to_string();
         return Some(
             Talk {
                 jp: mat.as_str().to_string(),
@@ -36,8 +47,7 @@ fn parse_talk(text: &str) -> Option<Talk> {
 }
 
 fn parse_case(text: &str) -> TextCase {
-    let regex1 = Regex::new(r"(?m)^%?(\$.*?) (.*?)$").unwrap();
-    let result1 = regex1.captures(text);
+    let result1 = REGEX_CASE.captures(text);
     if result1.is_some() {
         let mut case_value = "".into();
         let mut values: Vec<String> = Vec::new();
@@ -166,8 +176,7 @@ fn parse_case(text: &str) -> TextCase {
                         values.push(vv[2].to_string());
                     }
                     _ => {
-                        let regex2 = Regex::new(r"(?m)^(\d+)$").unwrap();
-                        if regex2.is_match(vv[0]) {
+                        if REGEX_IMPRESSION_NUMBER.is_match(vv[0]) {
                             case_value = format!("{} {}", &caps1[1], "{0}");
                             values.push(vv[0].to_string());
                         } else {
@@ -428,25 +437,20 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
     let mut current_jp = Vec::new();
     let mut is_parsing_section = false;
 
-    let regex1 = Regex::new(r"(?m)^//.*?").unwrap();
-    let regex2 = Regex::new(r"(?im)^%.*?,en").unwrap();
-    let regex3 = Regex::new(r"(?im)^(%.*?,jp)").unwrap();
-    let regex4 = Regex::new(r"(?m)^%?\$.*?$").unwrap();
-
     for line in text.lines() {
         let trimmed_line = line.trim();
 
         if line == "%endTxt" {
             break;
         }
-        if regex1.is_match(trimmed_line) {
+        if REGEX_COMMENT.is_match(trimmed_line) {
             continue;
         }
-        if regex2.is_match(trimmed_line) {
+        if REGEX_TAG_EN.is_match(trimmed_line) {
             is_parsing_section = false;
             continue;
         }
-        let result3 = regex3.captures(trimmed_line);
+        let result3 = REGEX_TAG_JP.captures(trimmed_line);
         if result3.is_some() {
             if !current_jp.is_empty() {
                 current_body.jp = current_jp.clone();
@@ -470,7 +474,7 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
             };
             is_parsing_section = true;
         } else {
-            let result4 = regex4.find(trimmed_line);
+            let result4 = REGEX_EXPRESSION.find(trimmed_line);
             if result4.is_some() {
                 if !current_jp.is_empty() {
                     current_body.jp = current_jp.clone();
@@ -501,8 +505,7 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
 }
 
 fn parse_text_talk_order(text: &str) -> bool {
-    let regex = Regex::new(r"(?mR)^%txt_talk_order$").unwrap();
-    return regex.is_match(text);
+    return REGEX_TALK_ORDER.is_match(text);
 }
 
 fn to_equip(text: &str) -> Option<Equip> {
