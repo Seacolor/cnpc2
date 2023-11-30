@@ -174,10 +174,89 @@ function App() {
         neck2_custom_item_id: "",
       },
       txt_talk_order: false,
-      txt: [],
+      txt: [
+        {
+          id: "%txtCalm",
+          value: "",
+          bodies: [
+            {
+              case_value: "",
+              values: [],
+              jp: [
+                "default"
+              ],
+            },
+          ],
+        },
+        {
+          id: "%txtAggro",
+          value: "",
+          bodies: [
+            {
+              case_value: "",
+              values: [],
+              jp: [
+                "default"
+              ],
+            },
+          ],
+        },
+        {
+          id: "%txtDead",
+          value: "",
+          bodies: [
+            {
+              case_value: "",
+              values: [],
+              jp: [
+                "default"
+              ],
+            },
+          ],
+        },
+        {
+          id: "%txtKilled",
+          value: "",
+          bodies: [
+            {
+              case_value: "",
+              values: [],
+              jp: [
+                "default"
+              ],
+            },
+          ],
+        },
+        {
+          id: "%txtWelcome",
+          value: "",
+          bodies: [
+            {
+              case_value: "",
+              values: [],
+              jp: [
+                "default"
+              ],
+            },
+          ],
+        },
+        {
+          id: "%txtDialog",
+          value: "",
+          bodies: [
+            {
+              case_value: "",
+              values: [],
+              jp: [
+                "default"
+              ],
+            },
+          ],
+        },
+      ],
       talk_enabled: false,
       talk: {
-        jp: "",
+        jp: "%txt_ucnpc_ev_b\n%txtevstart,JP\n%txt_ucnpc_ev_e",
       }
     }
   );
@@ -525,6 +604,7 @@ function App() {
               jp: t.jp,
             } as Types.TTextBodyListItem;
           }).map((b: Types.TTextBodyListItem, i: number) => {
+          if (!b.case) return ("");
           return (
             <div key={i}>
               <label>
@@ -2877,6 +2957,7 @@ function App() {
                       bodies: t.bodies,
                     } as Types.TTextListItem;
                   }).map((t: Types.TTextListItem, i: number) => {
+                  if (!t.id) return ("");
                   return (
                     <div key={i}>
                       <label>
