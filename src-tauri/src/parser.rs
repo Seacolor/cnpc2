@@ -428,9 +428,10 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
     let mut current_jp = Vec::new();
     let mut is_parsing_section = false;
 
-    let regex1 = Regex::new(r"(?im)^%.*?,en$").unwrap();
-    let regex2 = Regex::new(r"(?im)^%.*?,jp$").unwrap();
-    let regex3 = Regex::new(r"(?m)^%?(\$.*?)$").unwrap();
+    let regex1 = Regex::new(r"(?m)^//.*?").unwrap();
+    let regex2 = Regex::new(r"(?im)^%.*?,en").unwrap();
+    let regex3 = Regex::new(r"(?im)^(%.*?,jp)").unwrap();
+    let regex4 = Regex::new(r"(?m)^%?\$.*?$").unwrap();
 
     for line in text.lines() {
         let trimmed_line = line.trim();
@@ -440,11 +441,15 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
         }
         let result1 = regex1.find(trimmed_line);
         if result1.is_some() {
-            is_parsing_section = false;
             continue;
         }
         let result2 = regex2.find(trimmed_line);
         if result2.is_some() {
+            is_parsing_section = false;
+            continue;
+        }
+        let result3 = regex3.captures(trimmed_line);
+        if result3.is_some() {
             if !current_jp.is_empty() {
                 current_body.jp = current_jp.clone();
                 current_jp.clear();
@@ -458,7 +463,8 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
             if !current_section.bodies.is_empty() {
                 txt.push(current_section);
             }
-            let id = parse_id(result2.unwrap().as_str());
+            let caps = result3.unwrap();
+            let id = parse_id(&caps[1]);
             current_section = UserText {
                 id: id.id,
                 value: id.value,
@@ -466,13 +472,13 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
             };
             is_parsing_section = true;
         } else {
-            let result3 = regex3.find(trimmed_line);
-            if result3.is_some() {
+            let result4 = regex4.find(trimmed_line);
+            if result4.is_some() {
                 if !current_jp.is_empty() {
                     current_body.jp = current_jp.clone();
                     current_jp.clear();
                     current_section.bodies.push(current_body);
-                    let case = parse_case(result3.unwrap().as_str());
+                    let case = parse_case(result4.unwrap().as_str());
                     current_body = UserTextBody {
                         case_value: case.case_value,
                         values: case.values,
@@ -967,6 +973,21 @@ mod tests {
         let v2 = result2.unwrap();
         assert_eq!(v2.len(), 59);
         assert_eq!(v2.get(58).unwrap().bodies.get(0).unwrap().jp.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_text_in_comment() {
+        let text = "%Elona Custom Npc\r\n\r\nauthor.		\"だれか\"\r\nname.		\"younger brother,おとおと\"\r\nrace.		\"norland\"\r\nclass.		\"predator\"\r\nfilter.		\"/man/cnpc/\"\r\nlevel.		\"1\"\r\nrelation.	\"-1\"\r\nsex.		\"-1\"\r\nfixLv.		\"4\"\r\nrare.		\"100\"\r\nspawnType.	\"0\"\r\naiCalm.		\"4\"\r\naiMove.		\"100\"\r\naiDist.		\"1\"\r\naiHeal.		\"640\"\r\naiAct.		\"-1,-1,-2,651,0\"\r\naiActSubFreq.	\"20\"\r\naiActSub.	\"610,610,0,0,0\"\r\nmeleeElem.	\"61,200\"\r\nresist.		\"50,3,51,-5\"\r\nbitOn.		\"5,23\"\r\n\r\n%txtCalm,JP// 待機中\r\n「わーい」\r\n「おにいちゃん！」\r\n\r\n%txtCalm,EN\r\n\"Weee.\"\r\n\"Brother!\"\r\n\r\n%txtAggro,JP\r\n「てめー」\r\n\r\n%txtAggro,EN\r\n\"Scum!\"\r\n\r\n%txtDead,JP\r\n「ちんだ」\r\n\r\n%txtDead,EN\r\n\"I'm dead.\"\r\n\r\n%txtKilled,JP\r\n「ころしたよー」\r\n\r\n%txtKilled,EN\r\n\"I killed it.\"\r\n\r\n%txtWelcome,JP\r\n「おかえり」\r\n\r\n%txtWelcome,EN\r\n\"Welcome back.\"\r\n\r\n%txtDialog,JP\r\n// コメント\r\nなあに？\r\n（おとおとはあなたをじっとみている)\r\n%txtDialog,EN\r\nHi.\r\nWhat's up?\r\nDude...\r\n%endTxt";
+        let result = parse_text(text);
+        assert!(result.is_some());
+        let v = result.unwrap();
+        assert_eq!(v.len(), 6);
+        assert_eq!(v.get(0).unwrap().id, "%txtCalm");
+        let bodies = &v.get(0).unwrap().bodies;
+        assert_eq!(bodies.len(), 1);
+        let jp = &bodies.get(0).unwrap().jp;
+        assert_eq!(jp.len(), 3);
+        assert_eq!(v.get(5).unwrap().bodies.get(0).unwrap().jp.len(), 2);
     }
 
     #[test]
