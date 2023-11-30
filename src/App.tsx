@@ -606,7 +606,6 @@ function App() {
               jp: t.jp,
             } as Types.TTextBodyListItem;
           }).map((b: Types.TTextBodyListItem, i: number) => {
-          if (!b.case) return ("");
           return (
             <div key={i}>
               <label>
@@ -2953,14 +2952,13 @@ function App() {
               </Row>
               <Row className="content item-list">
                 <Col>
-                  { ...character?.txt.map((t: Types.TUserText) => {
+                  { texts && cases ? character?.txt.map((t: Types.TUserText) => {
                       return {
                         id: texts?.list.find((text) => text.id === t.id),
                         value: t.value,
                         bodies: t.bodies,
                       } as Types.TTextListItem;
                     }).map((t: Types.TTextListItem, i: number) => {
-                    if (!t.id) return ("");
                     return (
                       <div key={i}>
                         <label>
@@ -2982,7 +2980,7 @@ function App() {
                         </label>
                       </div>
                     );
-                  })}
+                  }) : ""}
                 </Col>
               </Row>
             </Tab>
