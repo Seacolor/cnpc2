@@ -480,7 +480,7 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
                     };
                 }
             } else if is_parsing_section {
-                    current_jp.push(trimmed_line.to_string());
+                current_jp.push(trimmed_line.to_string());
             }
         }
     }
