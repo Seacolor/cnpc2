@@ -2902,7 +2902,7 @@ function App() {
                       />
                       <button onClick={() => {
                         if (!textId || !textCase) return;
-                        const size = textCase.value?.match(/{}/g)?.length || 0;
+                        const size = textCase.values_size;
                         if (textCaseValues.length != size || textCaseValues.some(v => v == "")) return;
                         const t = character?.txt?.find((t) => t.id == textId.id && t.value == textValue);
                         if (t) {
