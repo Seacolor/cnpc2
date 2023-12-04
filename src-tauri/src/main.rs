@@ -273,14 +273,14 @@ pub struct TextCollection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Text {
-    id: String,
+    tag: String,
     label: String,
 }
 
 impl Text {
-    pub fn new(id: &str, label: &str) -> Self {
+    pub fn new(tag: &str, label: &str) -> Self {
         Text {
-            id: id.to_string(),
+            tag: tag.to_string(),
             label: label.to_string(),
         }
     }
@@ -293,14 +293,14 @@ pub struct CaseGroupCollection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CaseGroup {
-    id: String,
+    expression: String,
     label: String,
 }
 
 impl CaseGroup {
-    pub fn new(id: &str, label: &str) -> Self {
+    pub fn new(expression: &str, label: &str) -> Self {
         CaseGroup {
-            id: id.to_string(),
+            expression: expression.to_string(),
             label: label.to_string(),
         }
     }
@@ -313,7 +313,7 @@ pub struct CaseCollection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Case {
-    id: String,
+    expression: String,
     value: String,
     values_size: i64,
     values_type: String,
@@ -321,9 +321,9 @@ pub struct Case {
 }
 
 impl Case {
-    pub fn new(id: &str, value: &str, values_size: i64, values_type: &str, label: &str) -> Self {
+    pub fn new(expression: &str, value: &str, values_size: i64, values_type: &str, label: &str) -> Self {
         Case {
-            id: id.to_string(),
+            expression: expression.to_string(),
             value: value.to_string(),
             values_size: values_size,
             values_type: values_type.to_string(),

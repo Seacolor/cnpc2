@@ -166,7 +166,7 @@ export type TInitEquip = {
 }
 
 export type TUserText = {
-  id: string;
+  tag: string;
   value: string,
   bodies: TUserTextBody[];
 }
@@ -303,12 +303,12 @@ export type TTextCollection = {
 }
 
 export type TText = {
-  id: string;
+  tag: string;
   label: string,
 }
 
 export type TTextListItem = {
-  id: TText;
+  tag: TText;
   value: string;
   bodies: [TUserTextBody];
 }
@@ -324,7 +324,7 @@ export type TCaseGroupCollection = {
 }
 
 export type TCaseGroup = {
-  id: string;
+  expression: string;
   label: string;
 }
 
@@ -333,7 +333,7 @@ export type TCaseCollection = {
 }
 
 export type TCase = {
-  id: string;
+  expression: string;
   value: string;
   values_size: number;
   values_type: string;

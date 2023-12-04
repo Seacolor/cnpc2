@@ -151,9 +151,9 @@ pub(crate) async fn get_texts(pool: &SqlitePool) -> DbResult<Vec<Text>> {
 
     let mut texts = Vec::new();
     while let Some(row) = rows.try_next().await? {
-        let id: &str = row.try_get("tag")?;
+        let tag: &str = row.try_get("tag")?;
         let label: &str = row.try_get("label")?;
-        texts.push(Text::new(id, label));
+        texts.push(Text::new(tag, label));
     }
 
     Ok(texts)
@@ -165,9 +165,9 @@ pub(crate) async fn get_case_groups(pool: &SqlitePool) -> DbResult<Vec<CaseGroup
 
     let mut case_groups = Vec::new();
     while let Some(row) = rows.try_next().await? {
-        let id: &str = row.try_get("expression")?;
+        let expression: &str = row.try_get("expression")?;
         let label: &str = row.try_get("label")?;
-        case_groups.push(CaseGroup::new(id, label));
+        case_groups.push(CaseGroup::new(expression, label));
     }
 
     Ok(case_groups)
@@ -179,12 +179,12 @@ pub(crate) async fn get_cases(pool: &SqlitePool) -> DbResult<Vec<Case>> {
 
     let mut cases = Vec::new();
     while let Some(row) = rows.try_next().await? {
-        let id: &str = row.try_get("expression")?;
+        let expression: &str = row.try_get("expression")?;
         let value: &str = row.try_get("value")?;
         let values_size: i64 = row.try_get("values_size")?;
         let values_type: &str = row.try_get("values_type")?;
         let label: &str = row.try_get("label")?;
-        cases.push(Case::new(id, value, values_size, values_type, label));
+        cases.push(Case::new(expression, value, values_size, values_type, label));
     }
 
     Ok(cases)

@@ -178,7 +178,7 @@ function App() {
       txt_talk_order: false,
       txt: [
         {
-          id: "%txtCalm",
+          tag: "%txtCalm",
           value: "",
           bodies: [
             {
@@ -191,7 +191,7 @@ function App() {
           ],
         },
         {
-          id: "%txtAggro",
+          tag: "%txtAggro",
           value: "",
           bodies: [
             {
@@ -204,7 +204,7 @@ function App() {
           ],
         },
         {
-          id: "%txtDead",
+          tag: "%txtDead",
           value: "",
           bodies: [
             {
@@ -217,7 +217,7 @@ function App() {
           ],
         },
         {
-          id: "%txtKilled",
+          tag: "%txtKilled",
           value: "",
           bodies: [
             {
@@ -230,7 +230,7 @@ function App() {
           ],
         },
         {
-          id: "%txtWelcome",
+          tag: "%txtWelcome",
           value: "",
           bodies: [
             {
@@ -243,7 +243,7 @@ function App() {
           ],
         },
         {
-          id: "%txtDialog",
+          tag: "%txtDialog",
           value: "",
           bodies: [
             {
@@ -286,7 +286,7 @@ function App() {
   const [texts, setTexts] = useState<Types.TTextCollection | null>(null);
   const [caseGroups, setCaseGroups] = useState<Types.TCaseGroupCollection | null>(null);
   const [cases, setCases] = useState<Types.TCaseCollection | null>(null);
-  const [textId, setTextId] = useState<Types.TText | null>(null);
+  const [textTag, setTextTag] = useState<Types.TText | null>(null);
   const [textValue, setTextValue] = useState<string>("");
   const [textCaseGroup, setTextCaseGroup] = useState<Types.TCaseGroup | null>(null);
   const [currentCases, setCurrentCases] = useState<Types.TCase[]>([]);
@@ -456,7 +456,7 @@ function App() {
         });
       setTexts(texts);
       if (texts && texts.list) {
-        setTextId(texts.list[0]);
+        setTextTag(texts.list[0]);
       }
     })();
   }, []);
@@ -513,7 +513,7 @@ function App() {
     (async () => {
       if (caseGroups && caseGroups.list && cases && cases.list) {
         const cg = caseGroups.list[0];
-        const c = cases.list.filter((c) => c.id === cg.id);
+        const c = cases.list.filter((c) => c.expression === cg.expression);
         if (!c) throw Error("case not found.");
         setCurrentCases(c);
         setTextCase(c[0]);
@@ -524,7 +524,7 @@ function App() {
   useEffect(() => {
     (async () => {
       if (caseGroups && caseGroups.list && cases && cases.list && textCaseGroup) {
-        let c = cases.list.filter((c) => c.id === textCaseGroup.id);
+        let c = cases.list.filter((c) => c.expression === textCaseGroup.expression);
         if (!c) throw Error("case not found.");
         setCurrentCases(c);
         setTextCase(c[0]);
@@ -566,7 +566,7 @@ function App() {
             <li key={i}>
               <button className='small-button' onClick={(e) => {
                 e.preventDefault();
-                const t = character?.txt.find((t) => t.id === id.id && t.value === value);
+                const t = character?.txt.find((t) => t.tag === id.tag && t.value === value);
                 if (!t) return;
                 const b = t.bodies.find((b) => b.case_value === textCase.value && valuesEqual(b.values, caseValues));
                 if (!b) return;
@@ -2858,31 +2858,31 @@ function App() {
                   <label>
                     台詞:
                     <div className='item-list'>
-                      <select name="txt-select" onChange={(e) => {
-                        const t = texts?.list.find((t) => t.id == e.target.value);
+                      <select name="txt-tag-select" onChange={(e) => {
+                        const t = texts?.list.find((t) => t.tag == e.target.value);
                         if (!t) return;
-                        setTextId(t);
+                        setTextTag(t);
                         setTextValue("");
                       }}>
                         { texts?.list.map((t: Types.TText, i: number) => {
                           return (
-                            <option key={i} value={t.id}>{t.label}</option>
+                            <option key={i} value={t.tag}>{t.label}</option>
                           );
                         })}
                       </select>
-                      <ValueEditor textId={textId} actions={actions} onValueChange={(value: string) => setTextValue(value)} />
-                      <select name="txt-select" onChange={(e) => {
-                        const g = caseGroups?.list.find((g) => g.id == e.target.value);
+                      <ValueEditor textId={textTag} actions={actions} onValueChange={(value: string) => setTextValue(value)} />
+                      <select name="txt-case-group-select" onChange={(e) => {
+                        const g = caseGroups?.list.find((g) => g.expression == e.target.value);
                         if (!g) return;
                         setTextCaseGroup(g);
-                      }} value={textCaseGroup?.id}>
+                      }} value={textCaseGroup?.expression}>
                         { caseGroups?.list.map((t: Types.TCaseGroup, i: number) => {
                           return (
-                            <option key={i} value={t.id}>{t.label}</option>
+                            <option key={i} value={t.expression}>{t.label}</option>
                           );
                         })}
                       </select>
-                      <select name="txt-select" onChange={(e) => {
+                      <select name="txt-case-select" onChange={(e) => {
                         const c = currentCases?.find((c) => c.value == e.target.value);
                         if (!c) return;
                         setTextCase(c);
@@ -2901,10 +2901,10 @@ function App() {
                         onChange={e => setTextBodyJP(e.target.value)}
                       />
                       <button onClick={() => {
-                        if (!textId || !textCase) return;
+                        if (!textTag || !textCase) return;
                         const size = textCase.values_size;
                         if (textCaseValues.length != size || textCaseValues.some(v => v == "")) return;
-                        const t = character?.txt?.find((t) => t.id == textId.id && t.value == textValue);
+                        const t = character?.txt?.find((t) => t.tag == textTag.tag && t.value == textValue);
                         if (t) {
                           const b = t.bodies.find((b) => b.case_value === textCase.value && valuesEqual(b.values, textCaseValues));
                           if (b) {
@@ -2931,7 +2931,7 @@ function App() {
                               txt: [
                                 ...character?.txt,
                                 {
-                                  id: textId.id,
+                                  tag: textTag.tag,
                                   value: textValue,
                                   bodies: [
                                     {
@@ -2954,7 +2954,7 @@ function App() {
                 <Col>
                   { texts && cases ? character?.txt.map((t: Types.TUserText) => {
                       return {
-                        id: texts?.list.find((text) => text.id === t.id),
+                        tag: texts?.list.find((text) => text.tag === t.tag),
                         value: t.value,
                         bodies: t.bodies,
                       } as Types.TTextListItem;
@@ -2962,8 +2962,8 @@ function App() {
                     return (
                       <div key={i}>
                         <label>
-                          <TextLabel id={t.id} value={t.value} />:
-                          { t.id.id == "%txtDialog" ?
+                          <TextLabel id={t.tag} value={t.value} />:
+                          { t.tag.tag == "%txtDialog" ?
                           <div>
                             <label>
                               順番に話す
@@ -2976,7 +2976,7 @@ function App() {
                             </label>
                           </div>
                           : "" }
-                          <CaseList id={t.id} value={t.value} bodies={t.bodies} />
+                          <CaseList id={t.tag} value={t.value} bodies={t.bodies} />
                         </label>
                       </div>
                     );
