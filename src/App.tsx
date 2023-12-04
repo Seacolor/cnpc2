@@ -2875,6 +2875,7 @@ function App() {
                         const g = caseGroups?.list.find((g) => g.expression == e.target.value);
                         if (!g) return;
                         setTextCaseGroup(g);
+                        setTextCaseValues([]);
                       }} value={textCaseGroup?.expression}>
                         { caseGroups?.list.map((t: Types.TCaseGroup, i: number) => {
                           return (
@@ -2886,6 +2887,7 @@ function App() {
                         const c = currentCases?.find((c) => c.value == e.target.value);
                         if (!c) return;
                         setTextCase(c);
+                        setTextCaseValues([]);
                       }} value={textCase?.value}>
                         { currentCases?.map((c: Types.TCase, i: number) => {
                           return (
