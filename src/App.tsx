@@ -13,8 +13,10 @@ import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import TextLabel from './components/TextLabel';
 import ValueEditor from './components/ValueEditor'
-import ValuesEditor from './components/ValuesEditor'
+import ArgsEditor from './components/ArgsEditor'
 import CaseLabel from './components/CaseLabel'
+import CaseEditor from './components/CaseEditor'
+import { arrayEqual } from './utils/StringUtils';
 
 type CaseProps = {
   id: Types.TText;
@@ -25,17 +27,18 @@ type CaseProps = {
 type BodyProps = {
   id: Types.TText;
   value: string,
-  textCase: Types.TCase;
-  caseValues: [string];
+  caseValues: [Types.UserTextCaseValue];
+  caseArgs: [string];
   jp: [string];
 };
 
-function valuesEqual(a: string[], b: string[]): boolean {
+function valuesEqual(a: Types.UserTextCaseValue[], b: Types.UserTextCaseValue[]): boolean {
   if (!Array.isArray(a))    return false;
   if (!Array.isArray(b))    return false;
   if (a.length != b.length) return false;
   for (var i = 0, n = a.length; i < n; ++i) {
-    if (a[i] !== b[i]) return false;
+    if (a[i].value !== b[i].value) return false;
+    if (a[i].not !== b[i].not) return false;
   }
   return true;
 }
@@ -182,8 +185,13 @@ function App() {
           value: "",
           bodies: [
             {
-              case_value: "",
-              values: [],
+              case_values: [
+                {
+                  value: "",
+                  not: false
+                }
+              ],
+              case_args: [],
               jp: [
                 "default"
               ],
@@ -195,8 +203,13 @@ function App() {
           value: "",
           bodies: [
             {
-              case_value: "",
-              values: [],
+              case_values: [
+                {
+                  value: "",
+                  not: false
+                }
+              ],
+              case_args: [],
               jp: [
                 "default"
               ],
@@ -208,8 +221,13 @@ function App() {
           value: "",
           bodies: [
             {
-              case_value: "",
-              values: [],
+              case_values: [
+                {
+                  value: "",
+                  not: false
+                }
+              ],
+              case_args: [],
               jp: [
                 "default"
               ],
@@ -221,8 +239,13 @@ function App() {
           value: "",
           bodies: [
             {
-              case_value: "",
-              values: [],
+              case_values: [
+                {
+                  value: "",
+                  not: false
+                }
+              ],
+              case_args: [],
               jp: [
                 "default"
               ],
@@ -234,8 +257,13 @@ function App() {
           value: "",
           bodies: [
             {
-              case_value: "",
-              values: [],
+              case_values: [
+                {
+                  value: "",
+                  not: false
+                }
+              ],
+              case_args: [],
               jp: [
                 "default"
               ],
@@ -247,8 +275,13 @@ function App() {
           value: "",
           bodies: [
             {
-              case_value: "",
-              values: [],
+              case_values: [
+                {
+                  value: "",
+                  not: false
+                }
+              ],
+              case_args: [],
               jp: [
                 "default"
               ],
@@ -291,7 +324,9 @@ function App() {
   const [textCaseGroup, setTextCaseGroup] = useState<Types.TCaseGroup | null>(null);
   const [currentCases, setCurrentCases] = useState<Types.TCase[]>([]);
   const [textCase, setTextCase] = useState<Types.TCase | null>(null);
-  const [textCaseValues, setTextCaseValues] = useState<string[]>([]);
+  const [caseValues, setCaseValues] = useState<Types.UserTextCaseValue[]>([]);
+  const [textCaseArgs, setTextCaseArgs] = useState<string[]>([]);
+  const [caseArgs, setCaseArgs] = useState<string[]>([]);
   const [textBodyJP, setTextBodyJP] = useState<string>("");
 
   useEffect(() => {
@@ -555,8 +590,8 @@ function App() {
   const BodyList: FC<BodyProps> = ({
     id,
     value,
-    textCase,
     caseValues,
+    caseArgs,
     jp,
   }) => {
     return (
@@ -568,7 +603,7 @@ function App() {
                 e.preventDefault();
                 const t = character?.txt.find((t) => t.tag === id.tag && t.value === value);
                 if (!t) return;
-                const b = t.bodies.find((b) => b.case_value === textCase.value && valuesEqual(b.values, caseValues));
+                const b = t.bodies.find((b) => valuesEqual(b.case_values, caseValues) && arrayEqual(b.case_args, caseArgs));
                 if (!b) return;
                 b.jp.splice(i, 1);
                 setCharacter(
@@ -601,16 +636,16 @@ function App() {
       <div>
         { bodies?.map((t: Types.TUserTextBody) => {
             return {
-              case: cases?.list.find((c) => c.value === t.case_value),
-              values: t.values,
+              case_values: t.case_values,
+              case_args: t.case_args,
               jp: t.jp,
             } as Types.TTextBodyListItem;
           }).map((b: Types.TTextBodyListItem, i: number) => {
           return (
             <div key={i}>
               <label>
-                <CaseLabel body={b} />:
-                <BodyList id={id} value={value} textCase={b.case} caseValues={b.values} jp={b.jp} />
+                <CaseLabel body={b} cases={cases} />:
+                <BodyList id={id} value={value} caseValues={b.case_values} caseArgs={b.case_args} jp={b.jp} />
               </label>
             </div>
           );
@@ -2875,7 +2910,7 @@ function App() {
                         const g = caseGroups?.list.find((g) => g.expression == e.target.value);
                         if (!g) return;
                         setTextCaseGroup(g);
-                        setTextCaseValues([]);
+                        setTextCaseArgs([]);
                       }} value={textCaseGroup?.expression}>
                         { caseGroups?.list.map((t: Types.TCaseGroup, i: number) => {
                           return (
@@ -2887,7 +2922,7 @@ function App() {
                         const c = currentCases?.find((c) => c.value == e.target.value);
                         if (!c) return;
                         setTextCase(c);
-                        setTextCaseValues([]);
+                        setTextCaseArgs([]);
                       }} value={textCase?.value}>
                         { currentCases?.map((c: Types.TCase, i: number) => {
                           return (
@@ -2895,7 +2930,55 @@ function App() {
                           );
                         })}
                       </select>
-                      <ValuesEditor textCase={textCase} races={races} classes={classes} onValuesChange={(values: string[]) => setTextCaseValues(values)} />
+                      <ArgsEditor textCase={textCase} races={races} classes={classes} onArgsChange={(values: string[]) => setTextCaseArgs(values)} />
+                      <button onClick={() => {
+                        if (!textTag || !textCase || textCase.value == "") return;
+                        const size = textCase.args_size;
+                        if (textCaseArgs.length != size || textCaseArgs.some(v => v == "")) return;
+                        if (caseValues.length == 0) {
+                          setCaseValues(
+                            [
+                              ...caseValues,
+                              {
+                                value: textCase.value,
+                                not: false,
+                              },
+                            ]
+                          )
+                        } else {
+                          setCaseValues(
+                            [
+                              ...caseValues,
+                              {
+                                value: ",",
+                                not: false,
+                              },
+                              {
+                                value: textCase.value,
+                                not: false,
+                              },
+                            ]
+                          )
+                        }
+                        setCaseArgs(
+                          [
+                            ...caseArgs,
+                            ...textCaseArgs,
+                          ]
+                        )
+                      }}>Add case</button>
+                      <div className={classNames({hide: caseValues.length == 0})}>
+                        <button className='small-button' onClick={(e) => {
+                          e.preventDefault();
+                          setCaseValues([]);
+                          setCaseArgs([]);
+                        }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-x" viewBox="0 0 16 16">
+                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                          </svg>
+                        </button>
+                        <CaseEditor caseValues={caseValues} caseArgs={caseArgs} cases={cases} onValuesChange={(values: string[]) => setCaseValues(values)} />
+                      </div>
                       <textarea
                         name="txt-jp-textarea"
                         placeholder="Input a japanese text..."
@@ -2903,18 +2986,21 @@ function App() {
                         onChange={e => setTextBodyJP(e.target.value)}
                       />
                       <button onClick={() => {
-                        if (!textTag || !textCase) return;
-                        const size = textCase.values_size;
-                        if (textCaseValues.length != size || textCaseValues.some(v => v == "")) return;
+                        if (!textTag) return;
                         const t = character?.txt?.find((t) => t.tag == textTag.tag && t.value == textValue);
                         if (t) {
-                          const b = t.bodies.find((b) => b.case_value === textCase.value && valuesEqual(b.values, textCaseValues));
+                          const b = (() => {
+                            if (caseValues.length == 0) {
+                              return t.bodies.find((b) => valuesEqual(b.case_values, [ { value: "", not: false } ]));
+                            }
+                            return t.bodies.find((b) => valuesEqual(b.case_values, caseValues) && arrayEqual(b.case_args, caseArgs));
+                          })();
                           if (b) {
                             b.jp.push(textBodyJP);
                           } else {
                             t.bodies.push({
-                              case_value: textCase.value,
-                              values: textCaseValues,
+                              case_values: caseValues,
+                              case_args: caseArgs,
                               jp: [textBodyJP],
                             } as Types.TUserTextBody);
                           }
@@ -2927,6 +3013,12 @@ function App() {
                             }
                           );
                         } else {
+                          const values = (() => {
+                            if (caseValues.length == 0) {
+                              return [ { value: "", not: false } ];
+                            }
+                            return caseValues;
+                          })();
                           setCharacter(
                             {
                               ...character,
@@ -2937,8 +3029,8 @@ function App() {
                                   value: textValue,
                                   bodies: [
                                     {
-                                      case_value: textCase.value,
-                                      values: textCaseValues,
+                                      case_values: values,
+                                      case_args: caseArgs,
                                       jp: [textBodyJP],
                                     } as Types.TUserTextBody
                                   ],
@@ -2947,7 +3039,7 @@ function App() {
                             }
                           );
                         }
-                      }}>Add</button>
+                      }}>Add talk</button>
                     </div>
                   </label>
                 </Col>

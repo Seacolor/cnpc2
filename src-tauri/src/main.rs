@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{fs::{self, File}, io::Write};
+use std::fmt;
 use std::collections::HashMap;
 
 use encoding_rs::SHIFT_JIS;
@@ -315,18 +316,18 @@ pub struct CaseCollection {
 pub struct Case {
     expression: String,
     value: String,
-    values_size: i64,
-    values_type: String,
+    args_size: i64,
+    args_type: String,
     label: String,
 }
 
 impl Case {
-    pub fn new(expression: &str, value: &str, values_size: i64, values_type: &str, label: &str) -> Self {
+    pub fn new(expression: &str, value: &str, args_size: i64, args_type: &str, label: &str) -> Self {
         Case {
             expression: expression.to_string(),
             value: value.to_string(),
-            values_size: values_size,
-            values_type: values_type.to_string(),
+            args_size,
+            args_type: args_type.to_string(),
             label: label.to_string(),
         }
     }
@@ -383,15 +384,31 @@ pub struct UserTalk {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct UserTextCaseValue {
+    value: String,
+    not: bool,
+}
+
+impl fmt::Display for UserTextCaseValue {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        if self.not {
+            fmt.write_str("!")?;
+        }
+        fmt.write_str(&self.value)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserTextBody {
-    case_value: String,
-    values: Vec<String>,
+    case_values: Vec<UserTextCaseValue>,
+    case_args: Vec<String>,
     jp: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserText {
-    id: String,
+    tag: String,
     value: String,
     bodies: Vec<UserTextBody>,
 }
@@ -1011,27 +1028,28 @@ async fn save_file(path: &str, data: Character) -> Result<(), String> {
         if _t.value != "" {
             let mut values = HashMap::new();
             values.insert(String::from("0"), _t.value);
-            if let Ok(_s) = render(&_t.id, &values) {
+            if let Ok(_s) = render(&_t.tag, &values) {
                 txt.push(format!("{},JP", _s));
             }
         } else {
-            txt.push(format!("{},JP", _t.id));
+            txt.push(format!("{},JP", _t.tag));
         }
+        let mut i;
+        let mut values = HashMap::new();
         for _b in _t.bodies {
-            if _b.case_value != "" {
-                if _b.values.len() != 0 {
-                    let mut values = HashMap::new();
-                    let mut i = 0;
-                    while i < _b.values.len() {
-                        values.insert(i.to_string(), _b.values.get(i).unwrap().to_string());
-                        i += 1;
-                    }
-                    if let Ok(_s) = render(&_b.case_value, &values) {
-                        txt.push(_s);
-                    }
-                } else {
-                    txt.push(_b.case_value);
+            let case_value = _b.case_values.iter().map(|x| x.to_string()).collect::<Vec<_>>().join("");
+            if _b.case_args.len() != 0 {
+                values.clear();
+                i = 0;
+                while i < _b.case_args.len() {
+                    values.insert(i.to_string(), _b.case_args.get(i).unwrap().to_string());
+                    i += 1;
                 }
+                if let Ok(_s) = render(&case_value, &values) {
+                    txt.push(format!("${}", _s));
+                }
+            } else if case_value != "" {
+                txt.push(format!("${}", case_value));
             }
             for _m in _b.jp {
                 txt.push(_m);

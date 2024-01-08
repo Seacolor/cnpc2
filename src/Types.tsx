@@ -167,13 +167,18 @@ export type TInitEquip = {
 
 export type TUserText = {
   tag: string;
-  value: string,
+  value: string;
   bodies: TUserTextBody[];
 }
 
+export type UserTextCaseValue = {
+  value: string;
+  not: boolean;
+}
+
 export type TUserTextBody = {
-  case_value: string;
-  values: string[];
+  case_values: UserTextCaseValue[];
+  case_args: string[];
   jp: string[];
 }
 
@@ -314,8 +319,8 @@ export type TTextListItem = {
 }
 
 export type TTextBodyListItem = {
-  case: TCase;
-  values: [string];
+  case_values: [UserTextCaseValue];
+  case_args: [string];
   jp: [string];
 }
 
@@ -335,8 +340,8 @@ export type TCaseCollection = {
 export type TCase = {
   expression: string;
   value: string;
-  values_size: number;
-  values_type: string;
+  args_size: number;
+  args_type: string;
   label: string;
 }
 

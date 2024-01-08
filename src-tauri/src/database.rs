@@ -181,10 +181,10 @@ pub(crate) async fn get_cases(pool: &SqlitePool) -> DbResult<Vec<Case>> {
     while let Some(row) = rows.try_next().await? {
         let expression: &str = row.try_get("expression")?;
         let value: &str = row.try_get("value")?;
-        let values_size: i64 = row.try_get("values_size")?;
-        let values_type: &str = row.try_get("values_type")?;
+        let args_size: i64 = row.try_get("args_size")?;
+        let args_type: &str = row.try_get("args_type")?;
         let label: &str = row.try_get("label")?;
-        cases.push(Case::new(expression, value, values_size, values_type, label));
+        cases.push(Case::new(expression, value, args_size, args_type, label));
     }
 
     Ok(cases)

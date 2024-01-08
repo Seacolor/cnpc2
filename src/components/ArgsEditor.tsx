@@ -5,18 +5,18 @@ type Props = {
   textCase: Types.TCase | null;
   races: Types.TRaceCollection | null;
   classes: Types.TClassCollection | null;
-  onValuesChange: (values: string[]) => void;
+  onArgsChange: (values: string[]) => void;
 };
 
-const ValuesEditor: FC<Props> = ({
+const ArgsEditor: FC<Props> = ({
     textCase,
     races,
     classes,
-    onValuesChange,
+    onArgsChange,
   }) => {
     const [values, setValues] = useState<string[]>(["", "", "", ""]);
   
-    const onValueChange = (index: number, value: string, size: number) => {
+    const onArgChange = (index: number, value: string, size: number) => {
       values[index] = value;
       setValues([
           ...values,
@@ -25,13 +25,13 @@ const ValuesEditor: FC<Props> = ({
       for (let i:number = 0; i < size; i++) {
         v.push(values[i]);
       }
-      onValuesChange && onValuesChange(v);
+      onArgsChange && onArgsChange(v);
     }
 
-    if (textCase && textCase.values_type != "none") {
-      const size = textCase.values_size || 0;
+    if (textCase && textCase.args_type != "none") {
+      const size = textCase.args_size || 0;
       if (size > 0) {
-        if (textCase.values_type == "year") {
+        if (textCase.args_type == "year") {
           return (
               <>
                 <input
@@ -39,7 +39,7 @@ const ValuesEditor: FC<Props> = ({
                   min={517}
                   max={10000}
                   onChange={(e) => {
-                      onValueChange(0, e.target.value, size)
+                      onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -48,13 +48,13 @@ const ValuesEditor: FC<Props> = ({
                   min={517}
                   max={10000}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "month") {
+        } else if (textCase.args_type == "month") {
           return (
               <>
                 <input
@@ -62,7 +62,7 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={12}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -71,13 +71,13 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={12}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "date") {
+        } else if (textCase.args_type == "date") {
           return (
               <>
                 <input
@@ -85,7 +85,7 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={31}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -94,17 +94,17 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={31}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "hour") {
+        } else if (textCase.args_type == "hour") {
           return (
               <>
                 <select onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                 }}>
                   <option value="0">0</option>
                   <option value="01">1</option>
@@ -133,7 +133,7 @@ const ValuesEditor: FC<Props> = ({
                 </select>
                 { size >= 2 ?
                 <select onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                 }}>
                   <option value="0">0</option>
                   <option value="01">1</option>
@@ -163,11 +163,11 @@ const ValuesEditor: FC<Props> = ({
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "time") {
+        } else if (textCase.args_type == "time") {
           return (
               <>
                 <select onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                 }}>
                   <option value="0">0</option>
                   <option value="01">1</option>
@@ -196,7 +196,7 @@ const ValuesEditor: FC<Props> = ({
                 </select>
                 { size >= 2 ?
                 <select onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                 }}>
                   <option value="0">0</option>
                   <option value="01">1</option>
@@ -262,7 +262,7 @@ const ValuesEditor: FC<Props> = ({
                 : ""}
                 { size >= 3 ?
                 <select onChange={(e) => {
-                    onValueChange(2, e.target.value, size)
+                    onArgChange(2, e.target.value, size)
                 }}>
                   <option value="0">0</option>
                   <option value="01">1</option>
@@ -292,7 +292,7 @@ const ValuesEditor: FC<Props> = ({
                 : ""}
                 { size >= 4 ?
                 <select onChange={(e) => {
-                    onValueChange(3, e.target.value, size)
+                    onArgChange(3, e.target.value, size)
                 }}>
                   <option value="0">0</option>
                   <option value="01">1</option>
@@ -358,7 +358,7 @@ const ValuesEditor: FC<Props> = ({
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "floor") {
+        } else if (textCase.args_type == "floor") {
           return (
               <>
                 <input
@@ -366,7 +366,7 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={25}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -375,17 +375,17 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={25}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "weather") {
+        } else if (textCase.args_type == "weather") {
           return (
               <>
                 <select onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                 }}>
                   <option value="Sun">晴れ</option>
                   <option value="Rain">雨</option>
@@ -395,7 +395,7 @@ const ValuesEditor: FC<Props> = ({
                 </select>
               </>
           );
-        } else if (textCase.values_type == "impression") {
+        } else if (textCase.args_type == "impression") {
           return (
               <>
                 <input
@@ -403,7 +403,7 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={300}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -412,13 +412,13 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={300}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "sleepiness") {
+        } else if (textCase.args_type == "sleepiness") {
           return (
               <>
                 <input
@@ -426,7 +426,7 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={100}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -435,13 +435,13 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={100}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "karma") {
+        } else if (textCase.args_type == "karma") {
           return (
               <>
                 <input
@@ -449,7 +449,7 @@ const ValuesEditor: FC<Props> = ({
                   min={-100}
                   max={60}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -458,13 +458,13 @@ const ValuesEditor: FC<Props> = ({
                   min={-100}
                   max={60}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "cash") {
+        } else if (textCase.args_type == "cash") {
           return (
               <>
                 <input
@@ -472,7 +472,7 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={2147483647}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -481,13 +481,13 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={2147483647}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "fame") {
+        } else if (textCase.args_type == "fame") {
           return (
               <>
                 <input
@@ -495,7 +495,7 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={2147483647}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -504,17 +504,17 @@ const ValuesEditor: FC<Props> = ({
                   min={0}
                   max={2147483647}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
               </>
           );
-        } else if (textCase.values_type == "race") {
+        } else if (textCase.args_type == "race") {
           return (
               <>
                 <select onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                 }}>
                   { races?.list.map((e: Types.TRace, i: number) => {
                     return (
@@ -524,11 +524,11 @@ const ValuesEditor: FC<Props> = ({
                 </select>
               </>
           );
-        } else if (textCase.values_type == "class") {
+        } else if (textCase.args_type == "class") {
           return (
               <>
                 <select onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                 }}>
                   { classes?.list.map((e: Types.TClass, i: number) => {
                     return (
@@ -538,17 +538,17 @@ const ValuesEditor: FC<Props> = ({
                 </select>
               </>
           );
-        } else if (textCase.values_type == "comparison") {
+        } else if (textCase.args_type == "comparison") {
           return (
               <>
                 <input
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
               </>
           );
-        } else if (textCase.values_type == "percent") {
+        } else if (textCase.args_type == "percent") {
           return (
               <>
                 <input
@@ -556,7 +556,7 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={100}
                   onChange={(e) => {
-                    onValueChange(0, e.target.value, size)
+                    onArgChange(0, e.target.value, size)
                   }}
                 />
                 { size >= 2 ?
@@ -565,7 +565,7 @@ const ValuesEditor: FC<Props> = ({
                   min={1}
                   max={100}
                   onChange={(e) => {
-                    onValueChange(1, e.target.value, size)
+                    onArgChange(1, e.target.value, size)
                   }}
                 />
                 : ""}
@@ -577,4 +577,4 @@ const ValuesEditor: FC<Props> = ({
     return (<></>);
   };
 
-export default ValuesEditor;
+export default ArgsEditor;

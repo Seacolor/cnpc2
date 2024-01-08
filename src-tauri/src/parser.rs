@@ -4,7 +4,8 @@ use lazy_static::lazy_static;
 lazy_static! {
     static ref REGEX_TALK_ORDER: Regex = Regex::new(r"(?mR)^%txt_talk_order$").unwrap();
     static ref REGEX_TALK: Regex = Regex::new("(?sR)%txt_ucnpc_ev_b\r\n(.*?)\r\n%txt_ucnpc_ev_e").unwrap();
-    static ref REGEX_CASE: Regex = Regex::new(r"(?m)^%?(\$.*?) (.*?)$").unwrap();
+    static ref REGEX_NOT_CASE: Regex = Regex::new(r"(?m)^%?\$?!(.*?)$").unwrap();
+    static ref REGEX_CASE: Regex = Regex::new(r"(?m)^%?\$?!?(.*?) (.*?)$").unwrap();
     static ref REGEX_COMMENT: Regex = Regex::new(r"(?m)^//.*?").unwrap();
     static ref REGEX_TAG_EN: Regex = Regex::new(r"(?im)^%.*?,en").unwrap();
     static ref REGEX_TAG_JP: Regex = Regex::new(r"(?im)^(%.*?,jp)").unwrap();
@@ -12,15 +13,15 @@ lazy_static! {
     static ref REGEX_IMPRESSION_NUMBER: Regex = Regex::new(r"(?m)^(\d+)$").unwrap();
 }
 
-use crate::{Character, UserResist, UserRace, UserSkill, UserTrait, Figure, UserClass, InitEquip, UserText, UserTextBody, UserTalk};
+use crate::{Character, UserResist, UserRace, UserSkill, UserTrait, Figure, UserClass, InitEquip, UserText, UserTextBody, UserTextCaseValue, UserTalk};
 struct Equip {
     id: String,
     custom_item_id: String,
 }
 
 struct TextCase {
-    case_value: String,
-    values: Vec<String>,
+    case_values: Vec<UserTextCaseValue>,
+    case_args: Vec<String>,
 }
 
 struct TextId {
@@ -46,361 +47,384 @@ fn parse_talk(text: &str) -> Option<Talk> {
     return None;
 }
 
+fn parse_case_values(text: &str) -> Vec<String> {
+    let mut case_values: Vec<String> = Vec::new();
+    for _v1 in text.split('/').collect::<Vec<_>>() {
+        for _v2 in _v1.split(',').collect::<Vec<_>>() {
+            for _v3 in _v2.split('|').collect::<Vec<_>>() {
+                case_values.push(_v3.trim().to_string());
+                case_values.push("|".into());
+            }
+            case_values.pop();
+            case_values.push(",".into());
+        }
+        case_values.pop();
+        case_values.push("/".into());
+    }
+    case_values.pop();
+
+    case_values
+}
+
 fn parse_case(text: &str) -> TextCase {
-    let result1 = REGEX_CASE.captures(text);
-    if result1.is_some() {
-        let mut case_value = "".into();
-        let mut values: Vec<String> = Vec::new();
-        let caps1 = result1.unwrap();
-        match &caps1[1] {
-            "$when" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv[0] {
-                    "time" => {
-                        match vv.len() {
-                            2 => {
-                                let vvv = vv[1]
-                                    .split(":")
-                                    .collect::<Vec<_>>();
-                                case_value = format!("{} {} {}:{}", &caps1[1], vv[0], "{0}", "{1}");
-                                values.push(vvv[0].to_string());
-                                values.push(vvv[1].to_string());
-                            }
-                            4 => {
-                                let vvv1 = vv[1]
-                                    .split(":")
-                                    .collect::<Vec<_>>();
-                                let vvv2 = vv[3]
-                                    .split(":")
-                                    .collect::<Vec<_>>();
-                                case_value = format!("{} {} {}:{} {} {}:{}", &caps1[1], vv[0], "{0}", "{1}", vv[2], "{2}", "{3}");
-                                values.push(vvv1[0].to_string());
-                                values.push(vvv1[1].to_string());
-                                values.push(vvv2[0].to_string());
-                                values.push(vvv2[1].to_string());
-                            }
-                            _ => {
-                                case_value = format!("{} {}", &caps1[1], vv[0]);
-                            }
-                        }
-                    }
-                    _ => {
-                        match vv.len() {
-                            2 => {
-                                case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                                values.push(vv[1].to_string());
-                            }
-                            3 => {
-                                if vv[1] == "-" {
-                                    case_value = format!("{} {} {} {}", &caps1[1], vv[0], vv[1], "{0}");
-                                    values.push(vv[2].to_string());
-                                } else {
-                                    case_value = format!("{} {} {} {}", &caps1[1], vv[0], "{0}", vv[2]);
-                                    values.push(vv[1].to_string());
+    let mut case_values: Vec<UserTextCaseValue> = Vec::new();
+    let mut case_args: Vec<String> = Vec::new();
+    let result1 = parse_case_values(text);
+    for s in result1 {
+        let not = REGEX_NOT_CASE.is_match(&s);
+        let result2 = REGEX_CASE.captures(&s);
+        if result2.is_some() {
+            let mut case_value = "".into();
+            let caps1 = result2.unwrap();
+            match &caps1[1] {
+                "when" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv[0] {
+                        "time" => {
+                            match vv.len() {
+                                2 => {
+                                    let vvv = vv[1]
+                                        .split(":")
+                                        .collect::<Vec<_>>();
+                                    case_value = format!("{} {} {}:{}", &caps1[1], vv[0], "{0}", "{1}");
+                                    case_args.push(vvv[0].to_string());
+                                    case_args.push(vvv[1].to_string());
+                                }
+                                4 => {
+                                    let vvv1 = vv[1]
+                                        .split(":")
+                                        .collect::<Vec<_>>();
+                                    let vvv2 = vv[3]
+                                        .split(":")
+                                        .collect::<Vec<_>>();
+                                    case_value = format!("{} {} {}:{} {} {}:{}", &caps1[1], vv[0], "{0}", "{1}", vv[2], "{2}", "{3}");
+                                    case_args.push(vvv1[0].to_string());
+                                    case_args.push(vvv1[1].to_string());
+                                    case_args.push(vvv2[0].to_string());
+                                    case_args.push(vvv2[1].to_string());
+                                }
+                                _ => {
+                                    case_value = format!("{} {}", &caps1[1], vv[0]);
                                 }
                             }
-                            4 => {
-                                case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
-                                values.push(vv[1].to_string());
-                                values.push(vv[3].to_string());
-                            }
-                            5 => {
-                                case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
-                                values.push(vv[1].to_string());
-                                values.push(vv[3].to_string());
-                            }
-                            _ => {
-                                case_value = format!("{} {}", &caps1[1], vv[0]);
+                        }
+                        _ => {
+                            match vv.len() {
+                                2 => {
+                                    case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                    case_args.push(vv[1].to_string());
+                                }
+                                3 => {
+                                    if vv[1] == "-" {
+                                        case_value = format!("{} {} {} {}", &caps1[1], vv[0], vv[1], "{0}");
+                                        case_args.push(vv[2].to_string());
+                                    } else {
+                                        case_value = format!("{} {} {} {}", &caps1[1], vv[0], "{0}", vv[2]);
+                                        case_args.push(vv[1].to_string());
+                                    }
+                                }
+                                4 => {
+                                    case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
+                                    case_args.push(vv[1].to_string());
+                                    case_args.push(vv[3].to_string());
+                                }
+                                5 => {
+                                    case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
+                                    case_args.push(vv[1].to_string());
+                                    case_args.push(vv[3].to_string());
+                                }
+                                _ => {
+                                    case_value = format!("{} {}", &caps1[1], vv[0]);
+                                }
                             }
                         }
                     }
                 }
-            }
-            "$where" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv[0] {
-                    "floor" => {
-                        match vv.len() {
-                            2 => {
-                                case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                                values.push(vv[1].to_string());
-                            }
-                            3 => {
-                                if vv[1] == "-" {
-                                    case_value = format!("{} {} {} {}", &caps1[1], vv[0], vv[1], "{0}");
-                                    values.push(vv[2].to_string());
-                                } else {
-                                    case_value = format!("{} {} {} {}", &caps1[1], vv[0], "{0}", vv[2]);
-                                    values.push(vv[1].to_string());
+                "where" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv[0] {
+                        "floor" => {
+                            match vv.len() {
+                                2 => {
+                                    case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                    case_args.push(vv[1].to_string());
+                                }
+                                3 => {
+                                    if vv[1] == "-" {
+                                        case_value = format!("{} {} {} {}", &caps1[1], vv[0], vv[1], "{0}");
+                                        case_args.push(vv[2].to_string());
+                                    } else {
+                                        case_value = format!("{} {} {} {}", &caps1[1], vv[0], "{0}", vv[2]);
+                                        case_args.push(vv[1].to_string());
+                                    }
+                                }
+                                4 => {
+                                    case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
+                                    case_args.push(vv[1].to_string());
+                                    case_args.push(vv[3].to_string());
+                                }
+                                _ => {
+                                    case_value = format!("{} {}", &caps1[1], vv[0]);
                                 }
                             }
-                            4 => {
-                                case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
-                                values.push(vv[1].to_string());
-                                values.push(vv[3].to_string());
-                            }
-                            _ => {
-                                case_value = format!("{} {}", &caps1[1], vv[0]);
-                            }
                         }
-                    }
-                    _ => {
-                        case_value = format!("{} {}", &caps1[1], vv[0]);
-                    }
-                }
-            }
-            "$weather" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$impression" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv.len() {
-                    2 => {
-                        if vv[0] == "-" {
-                            case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                            values.push(vv[1].to_string());
-                        } else {
-                            case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
-                            values.push(vv[0].to_string());
-                        }
-                    }
-                    3 => {
-                        case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
-                        values.push(vv[0].to_string());
-                        values.push(vv[2].to_string());
-                    }
-                    _ => {
-                        if REGEX_IMPRESSION_NUMBER.is_match(vv[0]) {
-                            case_value = format!("{} {}", &caps1[1], "{0}");
-                            values.push(vv[0].to_string());
-                        } else {
+                        _ => {
                             case_value = format!("{} {}", &caps1[1], vv[0]);
                         }
                     }
                 }
-            }
-            "$condition" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$PCcondition" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv[0] {
-                    "sleepiness" => {
-                        match vv.len() {
-                            2 => {
+                "weather" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "impression" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv.len() {
+                        2 => {
+                            if vv[0] == "-" {
                                 case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                                values.push(vv[1].to_string());
+                                case_args.push(vv[1].to_string());
+                            } else {
+                                case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
+                                case_args.push(vv[0].to_string());
                             }
-                            3 => {
-                                if vv[1] == "-" {
-                                    case_value = format!("{} {} {} {}", &caps1[1], vv[0], vv[1], "{0}");
-                                    values.push(vv[2].to_string());
-                                } else {
-                                    case_value = format!("{} {} {} {}", &caps1[1], vv[0], "{0}", vv[2]);
-                                    values.push(vv[1].to_string());
-                                }
-                            }
-                            4 => {
-                                case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
-                                values.push(vv[1].to_string());
-                                values.push(vv[3].to_string());
-                            }
-                            _ => {
+                        }
+                        3 => {
+                            case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
+                            case_args.push(vv[0].to_string());
+                            case_args.push(vv[2].to_string());
+                        }
+                        _ => {
+                            if REGEX_IMPRESSION_NUMBER.is_match(vv[0]) {
+                                case_value = format!("{} {}", &caps1[1], "{0}");
+                                case_args.push(vv[0].to_string());
+                            } else {
                                 case_value = format!("{} {}", &caps1[1], vv[0]);
                             }
                         }
                     }
-                    _ => {
-                        case_value = format!("{} {}", &caps1[1], vv[0]);
-                    }
                 }
-            }
-            "$karma" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv.len() {
-                    2 => {
-                        if vv[0] == "-" {
-                            case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                            values.push(vv[1].to_string());
-                        } else {
-                            case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
-                            values.push(vv[0].to_string());
+                "condition" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "PCcondition" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv[0] {
+                        "sleepiness" => {
+                            match vv.len() {
+                                2 => {
+                                    case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                    case_args.push(vv[1].to_string());
+                                }
+                                3 => {
+                                    if vv[1] == "-" {
+                                        case_value = format!("{} {} {} {}", &caps1[1], vv[0], vv[1], "{0}");
+                                        case_args.push(vv[2].to_string());
+                                    } else {
+                                        case_value = format!("{} {} {} {}", &caps1[1], vv[0], "{0}", vv[2]);
+                                        case_args.push(vv[1].to_string());
+                                    }
+                                }
+                                4 => {
+                                    case_value = format!("{} {} {} {} {}", &caps1[1], vv[0], "{0}", vv[2], "{1}");
+                                    case_args.push(vv[1].to_string());
+                                    case_args.push(vv[3].to_string());
+                                }
+                                _ => {
+                                    case_value = format!("{} {}", &caps1[1], vv[0]);
+                                }
+                            }
+                        }
+                        _ => {
+                            case_value = format!("{} {}", &caps1[1], vv[0]);
                         }
                     }
-                    3 => {
-                        case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
-                        values.push(vv[0].to_string());
-                        values.push(vv[2].to_string());
-                    }
-                    _ => {
-                        case_value = format!("{} {}", &caps1[1], "{0}");
-                        values.push(vv[0].to_string());
-                    }
                 }
-            }
-            "$cash" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv.len() {
-                    2 => {
-                        if vv[0] == "-" {
-                            case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                            values.push(vv[1].to_string());
-                        } else {
-                            case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
-                            values.push(vv[0].to_string());
+                "karma" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv.len() {
+                        2 => {
+                            if vv[0] == "-" {
+                                case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                case_args.push(vv[1].to_string());
+                            } else {
+                                case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
+                                case_args.push(vv[0].to_string());
+                            }
+                        }
+                        3 => {
+                            case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
+                            case_args.push(vv[0].to_string());
+                            case_args.push(vv[2].to_string());
+                        }
+                        _ => {
+                            case_value = format!("{} {}", &caps1[1], "{0}");
+                            case_args.push(vv[0].to_string());
                         }
                     }
-                    3 => {
-                        case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
-                        values.push(vv[0].to_string());
-                        values.push(vv[2].to_string());
-                    }
-                    _ => {
-                        case_value = format!("{} {}", &caps1[1], "{0}");
-                        values.push(vv[0].to_string());
-                    }
                 }
-            }
-            "$PCcash" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv.len() {
-                    2 => {
-                        if vv[0] == "-" {
-                            case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                            values.push(vv[1].to_string());
-                        } else {
-                            case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
-                            values.push(vv[0].to_string());
+                "cash" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv.len() {
+                        2 => {
+                            if vv[0] == "-" {
+                                case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                case_args.push(vv[1].to_string());
+                            } else {
+                                case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
+                                case_args.push(vv[0].to_string());
+                            }
+                        }
+                        3 => {
+                            case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
+                            case_args.push(vv[0].to_string());
+                            case_args.push(vv[2].to_string());
+                        }
+                        _ => {
+                            case_value = format!("{} {}", &caps1[1], "{0}");
+                            case_args.push(vv[0].to_string());
                         }
                     }
-                    3 => {
-                        case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
-                        values.push(vv[0].to_string());
-                        values.push(vv[2].to_string());
-                    }
-                    _ => {
-                        case_value = format!("{} {}", &caps1[1], "{0}");
-                        values.push(vv[0].to_string());
-                    }
                 }
-            }
-            "$fame" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv.len() {
-                    2 => {
-                        if vv[0] == "-" {
-                            case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                            values.push(vv[1].to_string());
-                        } else {
-                            case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
-                            values.push(vv[0].to_string());
+                "PCcash" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv.len() {
+                        2 => {
+                            if vv[0] == "-" {
+                                case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                case_args.push(vv[1].to_string());
+                            } else {
+                                case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
+                                case_args.push(vv[0].to_string());
+                            }
+                        }
+                        3 => {
+                            case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
+                            case_args.push(vv[0].to_string());
+                            case_args.push(vv[2].to_string());
+                        }
+                        _ => {
+                            case_value = format!("{} {}", &caps1[1], "{0}");
+                            case_args.push(vv[0].to_string());
                         }
                     }
-                    3 => {
-                        case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
-                        values.push(vv[0].to_string());
-                        values.push(vv[2].to_string());
-                    }
-                    _ => {
-                        case_value = format!("{} {}", &caps1[1], "{0}");
-                        values.push(vv[0].to_string());
-                    }
                 }
-            }
-            "$PCfame" => {
-                let vv = caps1[2]
-                    .split(" ")
-                    .collect::<Vec<_>>();
-                match vv.len() {
-                    2 => {
-                        if vv[0] == "-" {
-                            case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
-                            values.push(vv[1].to_string());
-                        } else {
-                            case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
-                            values.push(vv[0].to_string());
+                "fame" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv.len() {
+                        2 => {
+                            if vv[0] == "-" {
+                                case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                case_args.push(vv[1].to_string());
+                            } else {
+                                case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
+                                case_args.push(vv[0].to_string());
+                            }
+                        }
+                        3 => {
+                            case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
+                            case_args.push(vv[0].to_string());
+                            case_args.push(vv[2].to_string());
+                        }
+                        _ => {
+                            case_value = format!("{} {}", &caps1[1], "{0}");
+                            case_args.push(vv[0].to_string());
                         }
                     }
-                    3 => {
-                        case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
-                        values.push(vv[0].to_string());
-                        values.push(vv[2].to_string());
-                    }
-                    _ => {
-                        case_value = format!("{} {}", &caps1[1], "{0}");
-                        values.push(vv[0].to_string());
+                }
+                "PCfame" => {
+                    let vv = caps1[2]
+                        .split(" ")
+                        .collect::<Vec<_>>();
+                    match vv.len() {
+                        2 => {
+                            if vv[0] == "-" {
+                                case_value = format!("{} {} {}", &caps1[1], vv[0], "{0}");
+                                case_args.push(vv[1].to_string());
+                            } else {
+                                case_value = format!("{} {} {}", &caps1[1], "{0}", vv[1]);
+                                case_args.push(vv[0].to_string());
+                            }
+                        }
+                        3 => {
+                            case_value = format!("{} {} {} {}", &caps1[1], "{0}", vv[1], "{1}");
+                            case_args.push(vv[0].to_string());
+                            case_args.push(vv[2].to_string());
+                        }
+                        _ => {
+                            case_value = format!("{} {}", &caps1[1], "{0}");
+                            case_args.push(vv[0].to_string());
+                        }
                     }
                 }
+                "religion" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "PCreligion" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "action" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "PCaction" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "sex" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "PCsex" => {
+                    case_value = format!("{} {}", &caps1[1], &caps1[2]);
+                }
+                "race" => {
+                    case_value = format!("{} {}", &caps1[1], "{0}");
+                    case_args.push(caps1[2].to_string());
+                }
+                "PCrace" => {
+                    case_value = format!("{} {}", &caps1[1], "{0}");
+                    case_args.push(caps1[2].to_string());
+                }
+                "class" => {
+                    case_value = format!("{} {}", &caps1[1], "{0}");
+                    case_args.push(caps1[2].to_string());
+                }
+                "PCclass" => {
+                    case_value = format!("{} {}", &caps1[1], "{0}");
+                    case_args.push(caps1[2].to_string());
+                }
+                "comparison" => {
+                    case_value = format!("{} {}", &caps1[1], "{0}");
+                    case_args.push(caps1[2].to_string());
+                }
+                "random" => {
+                    case_value = format!("{} {}", &caps1[1], "{0}");
+                    case_args.push(caps1[2].to_string());
+                }
+                _ => {}
             }
-            "$religion" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$PCreligion" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$action" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$PCaction" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$sex" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$PCsex" => {
-                case_value = format!("{} {}", &caps1[1], &caps1[2]);
-            }
-            "$race" => {
-                case_value = format!("{} {}", &caps1[1], "{0}");
-                values.push(caps1[2].to_string());
-            }
-            "$PCrace" => {
-                case_value = format!("{} {}", &caps1[1], "{0}");
-                values.push(caps1[2].to_string());
-            }
-            "$class" => {
-                case_value = format!("{} {}", &caps1[1], "{0}");
-                values.push(caps1[2].to_string());
-            }
-            "$PCclass" => {
-                case_value = format!("{} {}", &caps1[1], "{0}");
-                values.push(caps1[2].to_string());
-            }
-            "$comparison" => {
-                case_value = format!("{} {}", &caps1[1], "{0}");
-                values.push(caps1[2].to_string());
-            }
-            "$random" => {
-                case_value = format!("{} {}", &caps1[1], "{0}");
-                values.push(caps1[2].to_string());
-            }
-            _ => {}
+            case_values.push( UserTextCaseValue { value: case_value, not: not } );
+        } else {
+            case_values.push( UserTextCaseValue { value: s, not: not } );
         }
-        TextCase {
-            case_value: case_value,
-            values: values,
-        }
-    } else {
-        TextCase {
-            case_value: text.to_string(),
-            values: Vec::new(),
-        }
+    }
+
+    TextCase {
+        case_values,
+        case_args,
     }
 }
 
@@ -425,13 +449,13 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
     let mut txt: Vec<UserText> = Vec::new();
 
     let mut current_section = UserText {
-        id: "".into(),
+        tag: "".into(),
         value: "".into(),
         bodies: Vec::new(),
     };
     let mut current_body = UserTextBody {
-        case_value: "".into(),
-        values: Vec::new(),
+        case_values: vec![ UserTextCaseValue { value: "".into(), not: false } ],
+        case_args: Vec::new(),
         jp: Vec::new(),
     };
     let mut current_jp = Vec::new();
@@ -457,8 +481,8 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
                 current_jp.clear();
                 current_section.bodies.push(current_body);
                 current_body = UserTextBody {
-                    case_value: "".into(),
-                    values: Vec::new(),
+                    case_values: vec![ UserTextCaseValue { value: "".into(), not: false } ],
+                    case_args: Vec::new(),
                     jp: Vec::new(),
                 };
             }
@@ -468,7 +492,7 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
             let caps = result3.unwrap();
             let id = parse_id(&caps[1]);
             current_section = UserText {
-                id: id.id,
+                tag: id.id,
                 value: id.value,
                 bodies: Vec::new(),
             };
@@ -482,8 +506,8 @@ fn parse_text(text: &str) -> Option<Vec<UserText>> {
                     current_section.bodies.push(current_body);
                     let case = parse_case(result4.unwrap().as_str());
                     current_body = UserTextBody {
-                        case_value: case.case_value,
-                        values: case.values,
+                        case_values: case.case_values,
+                        case_args: case.case_args,
                         jp: Vec::new(),
                     };
                 }
@@ -924,6 +948,69 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_parse_case_values() {
+        let text = "$when month 1, when date 1";
+        let result = parse_case_values(text);
+        assert_eq!(result.len(), 3);
+        assert_eq!(result.get(0).unwrap().as_str(), "$when month 1");
+        assert_eq!(result.get(1).unwrap().as_str(), ",");
+        assert_eq!(result.get(2).unwrap().as_str(), "when date 1");
+        let text2 = "$weather Rain|weather Hard_rain,where North_Tyris/where Lumiest|where Port_Kapul";
+        let result2 = parse_case_values(text2);
+        assert_eq!(result2.len(), 9);
+        assert_eq!(result2.get(0).unwrap().as_str(), "$weather Rain");
+        assert_eq!(result2.get(1).unwrap().as_str(), "|");
+        assert_eq!(result2.get(2).unwrap().as_str(), "weather Hard_rain");
+        assert_eq!(result2.get(3).unwrap().as_str(), ",");
+        assert_eq!(result2.get(4).unwrap().as_str(), "where North_Tyris");
+        assert_eq!(result2.get(5).unwrap().as_str(), "/");
+        assert_eq!(result2.get(6).unwrap().as_str(), "where Lumiest");
+        assert_eq!(result2.get(7).unwrap().as_str(), "|");
+        assert_eq!(result2.get(8).unwrap().as_str(), "where Port_Kapul");
+    }
+
+    #[test]
+    fn test_parse_case() {
+        let text = "$when year 520";
+        let result = parse_case(text);
+        assert_eq!(result.case_values.len(), 1);
+        assert_eq!(result.case_values.get(0).unwrap().to_string().as_str(), "when year {0}");
+        assert_eq!(result.case_args.len(), 1);
+        assert_eq!(result.case_args.get(0).unwrap().as_str(), "520");
+        let text2 = "$when month 1, when date 1";
+        let result2 = parse_case(text2);
+        assert_eq!(result2.case_values.len(), 3);
+        assert_eq!(result2.case_values.get(0).unwrap().to_string().as_str(), "when month {0}");
+        assert_eq!(result2.case_values.get(1).unwrap().to_string().as_str(), ",");
+        assert_eq!(result2.case_values.get(2).unwrap().to_string().as_str(), "when date {0}");
+        assert_eq!(result2.case_args.len(), 2);
+        assert_eq!(result2.case_args.get(0).unwrap().as_str(), "1");
+        assert_eq!(result2.case_args.get(1).unwrap().as_str(), "1");
+        let text3 = "$when month 1, when date 1, when time 00:00";
+        let result3 = parse_case(text3);
+        assert_eq!(result3.case_values.len(), 5);
+        assert_eq!(result3.case_values.get(0).unwrap().to_string().as_str(), "when month {0}");
+        assert_eq!(result3.case_values.get(1).unwrap().to_string().as_str(), ",");
+        assert_eq!(result3.case_values.get(2).unwrap().to_string().as_str(), "when date {0}");
+        assert_eq!(result3.case_values.get(3).unwrap().to_string().as_str(), ",");
+        assert_eq!(result3.case_values.get(4).unwrap().to_string().as_str(), "when time {0}:{1}");
+        assert_eq!(result3.case_args.len(), 4);
+        assert_eq!(result3.case_args.get(0).unwrap().as_str(), "1");
+        assert_eq!(result3.case_args.get(1).unwrap().as_str(), "1");
+        assert_eq!(result3.case_args.get(2).unwrap().as_str(), "00");
+        assert_eq!(result3.case_args.get(3).unwrap().as_str(), "00");
+        let text4 = "$!where North_Tyris,when month 12 - 2";
+        let result4 = parse_case(text4);
+        assert_eq!(result4.case_values.len(), 3);
+        assert_eq!(result4.case_values.get(0).unwrap().to_string().as_str(), "!where North_Tyris");
+        assert_eq!(result4.case_values.get(1).unwrap().to_string().as_str(), ",");
+        assert_eq!(result4.case_values.get(2).unwrap().to_string().as_str(), "when month {0} - {1}");
+        assert_eq!(result4.case_args.len(), 2);
+        assert_eq!(result4.case_args.get(0).unwrap().as_str(), "12");
+        assert_eq!(result4.case_args.get(1).unwrap().as_str(), "2");
+    }
+
+    #[test]
     fn test_parse_talk_none() {
         let text = "%Elona Custom Npc\r\n\r\nauthor.		\"だれか\"\r\nname.		\"younger brother,おとおと\"\r\nrace.		\"norland\"\r\nclass.		\"predator\"\r\nfilter.		\"/man/cnpc/\"\r\nlevel.		\"1\"\r\nrelation.	\"-1\"\r\nsex.		\"-1\"\r\nfixLv.		\"4\"\r\nrare.		\"100\"\r\nspawnType.	\"0\"\r\naiCalm.		\"4\"\r\naiMove.		\"100\"\r\naiDist.		\"1\"\r\naiHeal.		\"640\"\r\naiAct.		\"-1,-1,-2,651,0\"\r\naiActSubFreq.	\"20\"\r\naiActSub.	\"610,610,0,0,0\"\r\nmeleeElem.	\"61,200\"\r\nresist.		\"50,3,51,-5\"\r\nbitOn.		\"5,23\"\r\n\r\n%txtCalm,JP\r\n「わーい」\r\n「おにいちゃん！」\r\n\r\n%txtCalm,EN\r\n\"Weee.\"\r\n\"Brother!\"\r\n\r\n%txtAggro,JP\r\n「てめー」\r\n\r\n%txtAggro,EN\r\n\"Scum!\"\r\n\r\n%txtDead,JP\r\n「ちんだ」\r\n\r\n%txtDead,EN\r\n\"I'm dead.\"\r\n\r\n%txtKilled,JP\r\n「ころしたよー」\r\n\r\n%txtKilled,EN\r\n\"I killed it.\"\r\n\r\n%txtWelcome,JP\r\n「おかえり」\r\n\r\n%txtWelcome,EN\r\n\"Welcome back.\"\r\n\r\n%txtDialog,JP\r\nなあに？\r\n（おとおとはあなたをじっとみている)\r\n%txtDialog,EN\r\nHi.\r\nWhat's up?\r\nDude...\r\n%endTxt";
         let result = parse_talk(text);
@@ -961,7 +1048,7 @@ mod tests {
         assert!(result.is_some());
         let v = result.unwrap();
         assert_eq!(v.len(), 6);
-        assert_eq!(v.get(0).unwrap().id, "%txtCalm");
+        assert_eq!(v.get(0).unwrap().tag, "%txtCalm");
         let bodies = &v.get(0).unwrap().bodies;
         assert_eq!(bodies.len(), 1);
         let jp = &bodies.get(0).unwrap().jp;
@@ -983,7 +1070,7 @@ mod tests {
         assert!(result.is_some());
         let v = result.unwrap();
         assert_eq!(v.len(), 6);
-        assert_eq!(v.get(0).unwrap().id, "%txtCalm");
+        assert_eq!(v.get(0).unwrap().tag, "%txtCalm");
         let bodies = &v.get(0).unwrap().bodies;
         assert_eq!(bodies.len(), 1);
         let jp = &bodies.get(0).unwrap().jp;
@@ -998,10 +1085,17 @@ mod tests {
         assert!(result.is_some());
         let v = result.unwrap();
         assert_eq!(v.len(), 6);
-        assert_eq!(v.get(0).unwrap().id, "%txtCalm");
+        assert_eq!(v.get(0).unwrap().tag, "%txtCalm");
         let bodies = &v.get(0).unwrap().bodies;
         assert_eq!(bodies.len(), 30);
         let jp = &bodies.get(0).unwrap().jp;
         assert_eq!(jp.len(), 3);
+
+        let text2 = "%Elona Custom Npc\r\n\r\nauthor.		\"だれか\"\r\nname.		\"younger brother,おとおと\"\r\nrace.		\"norland\"\r\nclass.		\"predator\"\r\nfilter.		\"/man/cnpc/\"\r\nlevel.		\"1\"\r\nrelation.	\"-1\"\r\nsex.		\"-1\"\r\nfixLv.		\"4\"\r\nrare.		\"100\"\r\nspawnType.	\"0\"\r\naiCalm.		\"4\"\r\naiMove.		\"100\"\r\naiDist.		\"1\"\r\naiHeal.		\"640\"\r\naiAct.		\"-1,-1,-2,651,0\"\r\naiActSubFreq.	\"20\"\r\naiActSub.	\"610,610,0,0,0\"\r\nmeleeElem.	\"61,200\"\r\nresist.		\"50,3,51,-5\"\r\nbitOn.		\"5,23\"\r\n\r\n%txtCalm,JP\r\ndefault\r\n$when month 1, when date 1\r\n「あけましておめでとー」\r\n%endTxt";
+        let result2 = parse_text(text2);
+        assert!(result2.is_some());
+        let v2 = result2.unwrap();
+        assert_eq!(v2.len(), 1);
+        assert_eq!(v2.get(0).unwrap().bodies.len(), 2);
     }
 }
